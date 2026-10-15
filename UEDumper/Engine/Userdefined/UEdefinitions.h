@@ -67,10 +67,14 @@
 #define UE_5_07		16 // Fixes FFieldClass::Id offset
 
 
+
 /* UE version settings */
 
 //set your games ue version
-#define UE_VERSION UE_4_27
+#define UE_VERSION UE_5_07
+
+//set if your game uses ue-as
+#define UE_AS 1
 
 
 /* SDK and MDK generation */

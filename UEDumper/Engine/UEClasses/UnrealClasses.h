@@ -203,16 +203,6 @@ public:
 	static UClass* staticClass();
 };
 
-#if UE_VERSION >= UE_4_22
-class FStructBaseChain
-{
-public:
-	FStructBaseChain** StructBaseChainArray;
-	int32_t NumStructBasesInChainMinusOne;
-};
-
-#endif
-
 // https://github.com/EpicGames/UnrealEngine/blob/4.19/Engine/Source/Runtime/CoreUObject/Public/UObject/Class.h#L218
 // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Source/Runtime/CoreUObject/Public/UObject/Class.h#L248
 // https://github.com/EpicGames/UnrealEngine/blob/4.25/Engine/Source/Runtime/CoreUObject/Public/UObject/Class.h#L283
@@ -257,7 +247,14 @@ public:
 	int32_t		PropertiesSize;
 
 	/** Alignment of structure in memory, structure will be at least this large */
+#if UE_VERSION < UE_5_06
 	int32_t		MinAlignment;
+#else
+	int16_t		MinAlignment;
+
+	/** State flags */
+	int16_t		StructStateFlags;
+#endif
 
 	/** Script byte code associated with this object */
 	TArray<uint8_t> Script;
@@ -323,6 +320,10 @@ public:
 	/** Unique id incremented each time this class properties get destroyed */
 	int32_t FieldPathSerialNumber;
 
+#if UE_VERSION >= UE_5_05
+	/** Number of fields, inclusive of base fields and fixed-size array elements. */
+	int32_t TotalFieldCount;
+#endif
 #endif
 
 #if UE_VERSION < UE_5_00
@@ -484,13 +485,16 @@ public:
 	/** In memory only: Linked list of properties requiring post constructor initialization.**/
 	UProperty* PostConstructLinkNext;
 
+#if WITH_EDITORONLY_DATA && UE_VERSION >= UE_4_25
+	FField* AssociatedField;
+#endif
+
 	//static std::string typeName() { return "UProperty"; }
 	static UClass* staticClass();
 
 	int32_t getOffset() const;
 
 	fieldType getType();
-
 };
 
 
@@ -892,7 +896,7 @@ class UEnumProperty : public UProperty
 public:
 	using UProperty::UProperty;
 
-	uintptr_t	UnderlyingProp;
+	UNumericProperty* UnderlyingProp;
 	UEnum* Enum;
 
 	UEnum* getEnum() const;
@@ -971,6 +975,9 @@ public:
 	{
 		FField* Field;
 		UObject* Object;
+#if UE_VERSION >= UE_5_07
+		uintptr_t Unknown;
+#endif
 	} Container;
 
 #if UE_VERSION < UE_5_03
@@ -1004,6 +1011,9 @@ public:
 	/** Object flags */
 	EObjectFlags FlagsPrivate;
 
+#if WITH_EDITORONLY_DATA
+	uintptr_t MetaDataMap;
+#endif
 
 	operator bool() const { return ClassPrivate != nullptr; }
 
@@ -1026,10 +1036,13 @@ public:
 	using FField::FField;
 
 	// Persistent variables.
-	int32_t			ArrayDim;
-	int32_t			ElementSize;
-	EPropertyFlags	PropertyFlags;
-	uint16_t		RepIndex;
+	int32_t ArrayDim;
+	int32_t ElementSize;
+	EPropertyFlags PropertyFlags;
+	uint16_t RepIndex;
+#if UE_AS && UE_VERSION >= UE_5_07
+	EAngelscriptPropertyFlags AngelscriptPropertyFlags;
+#endif
 
 	uint8_t			BlueprintReplicationCondition;
 	int32_t			Offset;
